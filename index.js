@@ -89,7 +89,7 @@ async function requestCYOAResponses() {
     const useWIAN = extension_settings.cyoa_responses?.apply_wi_an || defaultSettings.apply_wi_an;
     const responseLength = extension_settings.cyoa_responses?.response_length || defaultSettings.response_length;
     //  generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null, noContext = false)
-    const response = await generateQuietPrompt(prompt, true, !useWIAN, null, null, responseLength);
+    const response = await generateQuietPrompt(prompt, false, !useWIAN, null, null, responseLength);
 
     const parsedResponse = parseResponse(response);
     if (!parsedResponse) {
