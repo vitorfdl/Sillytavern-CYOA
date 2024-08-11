@@ -1,6 +1,10 @@
 # SillyTavern CYOA Responses Extension
 This extension adds Choose Your Own Adventure (CYOA) style responses to your SillyTavern chats. It generates multiple response options for the user to choose from, enhancing interactivity and allowing for branching narratives.
 
+<p align="center">
+  <img src="assets/response.png" width="50%">
+</p>
+
 ## Features
 - Generates multiple response options for user selection
 - Customizable number of response options
@@ -17,11 +21,18 @@ Use SillyTavern's built-in extension installer with this URL:
 3. Set the desired number of response options.
 4. Use the `/cyoa` slash command in chat to generate CYOA options.
 
+### CYOA Buttons
+After generating CYOA options, you'll see a set of buttons for each suggestion:
+- **Suggestion Button**: Clicking on the main suggestion button will automatically impersonate the selected option. This means the AI will act as if the user had chosen that particular story beat.
+- **Edit Button**: Next to each suggestion is an edit button (pencil icon). Clicking this will copy the suggestion text to the input area, allowing you to modify it before sending or use it as inspiration for your own response.
+
 ### Settings
-<img src="assets/settings.png" width="50%">
+<p align="center">
+    <img src="assets/settings.png" width="50%">
+</p>
 
 - **LLM Prompt for Options**: Customize the prompt used to generate CYOA response options. You can use `{{suggestionNumber}}` as a placeholder for the number of responses.
-    - You must ensure the LLM response contains each suggestion between `<suggestion></suggestion>` tags. The plugin also support `< suggestion >` and `Suggestion N: text...` as valid tags.
+- You must ensure the LLM response contains each suggestion between `<suggestion></suggestion>` tags. The plugin also support `< suggestion >` and `Suggestion N: text...` as valid tags.
 - **LLM Prompt for Impersonation**: Set the prompt used when impersonating the selected response. Use `{{suggestionText}}` as a placeholder for the chosen option's text.
 - **Apply World Info / Author's Note**: Toggle to include World Info and Author's Note in the CYOA generation process.
 - **Number of Responses**: Adjust the slider to set how many CYOA options are generated (1-10).
@@ -40,15 +51,6 @@ The assistant will end the response with {{suggestionNumber}} distinct single-se
 [Narrate for {{user}}: {{suggestionText}}]
 [Write the User response]
 ```
-
-### CYOA Buttons
-
-<img src="assets/response.png" width="50%">
-
-
-After generating CYOA options, you'll see a set of buttons for each suggestion:
-- **Suggestion Button**: Clicking on the main suggestion button will automatically impersonate the selected option. This means the AI will act as if the user had chosen that particular story beat.
-- **Edit Button**: Next to each suggestion is an edit button (pencil icon). Clicking this will copy the suggestion text to the input area, allowing you to modify it before sending or use it as inspiration for your own response.
 
 ## Slash Command
 The extension exposes the `/cyoa` slash command, which can be added to SillyTavern's QuickSettings for easy access. This command triggers the generation of CYOA response options.

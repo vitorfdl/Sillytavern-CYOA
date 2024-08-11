@@ -46,6 +46,10 @@ function parseResponse(response) {
         suggestions.push(match[1] || match[2]);
     }
 
+    if (suggestions.length === 0) {
+        return;
+    }
+
     const newResponse = suggestions.map((suggestion, index) =>
         `<div class="suggestion">
             <button class="suggestion" data-index="${index}">${suggestion}</button>
@@ -82,9 +86,14 @@ async function requestCYOAResponses() {
 
     removeLastCYOAMessage(chat);
 
+    toastr.info('CYOA: Generating response...');
     const prompt = extension_settings.cyoa_responses?.llm_prompt || defaultSettings.llm_prompt || "";
     const response = await generateQuietPrompt(prompt, true, true, null, null, 350);
     const parsedResponse = parseResponse(response);
+    if (!parsedResponse) {
+        toastr.error('CYOA: Failed to parse response');
+        return;
+    }
     await sendMessageToUI(parsedResponse);
 }
 
@@ -125,7 +134,7 @@ async function sendMessageToUI(parsedResponse) {
     };
 
     context.chat.push(messageObject);
-    await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
+    // await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
     context.addOneMessage(messageObject, { showSwipes: false, forceId: chat.length - 1 });
 }
 
@@ -134,18 +143,19 @@ async function sendMessageToUI(parsedResponse) {
  * @param {*} event
  */
 async function handleCYOABtn(event) {
-    const context = getContext();
     const $button = $(event.target);
     const text = $button.text().trim();
 
     removeLastCYOAMessage();
+    // Sleep for 500ms before continuing
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     const inputTextarea = document.querySelector('#send_textarea');
     if (inputTextarea instanceof HTMLTextAreaElement) {
         let impersonatePrompt = extension_settings.cyoa_responses?.llm_prompt_impersonate || '';
-        impersonatePrompt = substituteParamsExtended(String(extension_settings.expressions.llmPrompt), { suggestionText: text });
+        impersonatePrompt = substituteParamsExtended(String(extension_settings.cyoa_responses?.llm_prompt_impersonate), { suggestionText: text });
         const quiet_prompt = `/impersonate await=true ${impersonatePrompt}`;
         inputTextarea.value = quiet_prompt;
-
         inputTextarea.dispatchEvent(new Event('input', { bubbles: true }));
 
             // Find and click the send button
