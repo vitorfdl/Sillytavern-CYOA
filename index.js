@@ -20,8 +20,13 @@ const extensionName = "SillyTavern-CYOA-Responses";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 const defaultSettings = {
     enabled: false,
-    llm_prompt: "",
-    llm_prompt_impersonate: "",
+    llm_prompt: `PAUSE THE ROLEPLAY.
+The assistant will end the response with {{suggestionNumber}} distinct single-sentence suggestions for the next story beat, each suggestion surrounded by \`<suggestion>\` tags:
+<suggestion>suggestion_1</suggestion>
+<suggestion>suggestion_2</suggestion>
+...`,
+    llm_prompt_impersonate: `[Narrate for {{user}}: {{suggestionText}}]
+[Write User response]`,
     apply_wi_an: false,
     num_responses: 3,
 };

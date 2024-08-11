@@ -9,9 +9,8 @@ This extension adds Choose Your Own Adventure (CYOA) style responses to your Sil
 - Customizable prompts for option generation and impersonation
 
 ## Installation
-
 Use SillyTavern's built-in extension installer with this URL:
-[GitHub repository URL]
+
 
 ## Usage
 
@@ -21,13 +20,28 @@ Use SillyTavern's built-in extension installer with this URL:
 4. Use the `/cyoa` slash command in chat to generate CYOA options.
 
 ### Settings
-![](assets/settings.png)
+<img src="assets/settings.png" width="50%">
 
 - **LLM Prompt for Options**: Customize the prompt used to generate CYOA response options. You can use `{{suggestionNumber}}` as a placeholder for the number of responses.
     - You must ensure the LLM response contains each suggestion between `<suggestion></suggestion>` tags. The plugin also support `< suggestion >` and `Suggestion N: text...` as valid tags.
 - **LLM Prompt for Impersonation**: Set the prompt used when impersonating the selected response. Use `{{suggestionText}}` as a placeholder for the chosen option's text.
 - **Apply World Info / Author's Note**: Toggle to include World Info and Author's Note in the CYOA generation process.
 - **Number of Responses**: Adjust the slider to set how many CYOA options are generated (1-10).
+
+### LLM Prompt Examples:
+```
+PAUSE THE ROLEPLAY.
+The assistant will end the response with {{suggestionNumber}} distinct single-sentence suggestions for the next story beat, each suggestion surrounded by `<suggestion>` tags:
+<suggestion>suggestion_1</suggestion>
+<suggestion>suggestion_2</suggestion>
+... 
+```
+
+### Impersonate Prompt Example:
+```
+[Narrate for {{user}}: {{suggestionText}}]
+[Write the User response]
+```
 
 ### CYOA Buttons
 
