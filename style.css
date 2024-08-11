@@ -24,16 +24,18 @@
     background-color: var(--black50a);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
-    padding: 1em 1em;
-    cursor: pointer;
+    padding: 1em;
     margin: 5px 0;
-    transition: 0.3s;
+    font-size: 1.1em;
+    opacity: 0.5;
+    cursor: pointer;
+    transition: opacity 0.3s;
+    display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
-    font-size: 1.1em;
-    opacity: 0.5;
 }
+
 
 .mes_text .custom-suggestions > .custom-suggestion button:hover {
     opacity: 1;
@@ -49,28 +51,4 @@
 
 .mes_text .custom-suggestions > .custom-suggestion button.custom-edit-suggestion .custom-text {
     display: none;
-}
-
-#chat .mes details > summary {
-    color: cyan;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: 200ms;
-}
-
-#chat .mes details > summary:hover {
-    border-bottom-color: cyan;
-}
-
-#chat .mes[is_system="true"] {
-    height: 100px !important;
-    overflow: clip;
-    opacity: 0.25;
-    filter: saturate(0);
-    transition: 200ms;
-}
-
-#chat .mes[is_system="true"]:hover {
-    opacity: 1;
-    filter: saturate(1);
 }

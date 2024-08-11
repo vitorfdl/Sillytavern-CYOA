@@ -35,8 +35,8 @@ Each suggestion surrounded by \`<suggestion>\` tags. E.g:
 Do not include any other content in your response.`,
     llm_prompt_impersonate: `[Event Direction for the next story beat on {{user}} perspective: \`{{suggestionText}}\`]
 [Based on the expected events, write the user response]`,
-    apply_wi_an: false,
-    num_responses: 3,
+    apply_wi_an: true,
+    num_responses: 5,
     response_length: 500,
 };
 let inApiCall = false;
@@ -61,6 +61,7 @@ function parseResponse(response) {
     if (suggestions.length === 0) {
         return;
     }
+
     const newResponse = suggestions.map((suggestion) =>
 `<div class="suggestion"><button class="suggestion">${suggestion}</button><button class="edit-suggestion fa-solid fa-pen-to-square"><span class="text">${suggestion}</span></button></div>`);
     return `<div class=\"suggestions\">${newResponse.join("")}</div>`
