@@ -39,17 +39,25 @@ After generating CYOA options, you'll see a set of buttons for each suggestion:
 
 ### LLM Prompt Examples:
 ```
-PAUSE THE ROLEPLAY.
-The assistant will end the response with {{suggestionNumber}} distinct single-sentence suggestions for the next story beat, each suggestion surrounded by `<suggestion>` tags:
+Stop the roleplay now and provide a response with {{suggestionNumber}} brief distinct single-sentence suggestions for the next story beat on {{user}} perspective. Ensure each suggestion aligns with its corresponding description:
+1. Eases tension and improves the protagonist's situation
+2. Creates or increases tension and worsens the protagonist's situation
+3. Leads directly but believably to a wild twist or super weird event
+4. Slowly moves the story forward without ending the current scene
+5. Pushes the story forward, potentially ending the current scene if feasible'
+
+Each suggestion surrounded by `<suggestion>` tags. E.g:
 <suggestion>suggestion_1</suggestion>
 <suggestion>suggestion_2</suggestion>
 ... 
+
+Do not include any other content in your response.
 ```
 
 ### Impersonate Prompt Example:
 ```
-[Narrate for {{user}}: {{suggestionText}}]
-[Write the User response]
+[Event Direction for the next story beat on {{user}} perspective: {{suggestionText}}]
+[Based on the expected events, write the user response]
 ```
 
 ## Slash Command
