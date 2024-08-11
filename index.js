@@ -4,10 +4,9 @@ import {
   } from "../../../extensions.js";
 
 import { saveSettingsDebounced,
-    event_types,
-    eventSource,
     setEditedMessageId,
     generateQuietPrompt,
+    is_send_press,
     substituteParamsExtended,
  } from "../../../../script.js";
 
@@ -15,6 +14,7 @@ import { saveSettingsDebounced,
  import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
  import { getMessageTimeStamp } from '../../../RossAscends-mods.js';
  import { MacrosParser } from '../../../macros.js';
+ import { is_group_generating, selected_group } from '../../../group-chats.js';
 
 const extensionName = "SillyTavern-CYOA-Responses";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
@@ -66,6 +66,19 @@ function parseResponse(response) {
     return `<div class=\"suggestions\">${newResponse.join("")}</div>`
 }
 
+async function waitForGeneration() {
+    try {
+        // Wait for group to finish generating
+        if (selected_group) {
+            await waitUntilCondition(() => is_group_generating === false, 1000, 10);
+        }
+        // Wait for the send button to be released
+        waitUntilCondition(() => is_send_press === false, 30000, 100);
+    } catch {
+        console.debug('Timeout waiting for is_send_press');
+        return;
+    }
+}
 /**
  * Handles the CYOA response generation
  * @returns
@@ -92,12 +105,14 @@ async function requestCYOAResponses() {
 
     removeLastCYOAMessage(chat);
 
+    await waitForGeneration();
+
     toastr.info('CYOA: Generating response...');
     const prompt = extension_settings.cyoa_responses?.llm_prompt || defaultSettings.llm_prompt || "";
     const useWIAN = extension_settings.cyoa_responses?.apply_wi_an || defaultSettings.apply_wi_an;
     const responseLength = extension_settings.cyoa_responses?.response_length || defaultSettings.response_length;
     //  generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null, noContext = false)
-    const response = await generateQuietPrompt(prompt, false, !useWIAN, null, null, responseLength);
+    const response = await generateQuietPrompt(prompt, false, !useWIAN, null, "Suggestion List", responseLength);
 
     const parsedResponse = parseResponse(response);
     if (!parsedResponse) {
@@ -159,26 +174,36 @@ async function sendMessageToUI(parsedResponse) {
  */
 async function handleCYOABtn(event) {
     const $button = $(event.target);
-    const text = $button.text().trim();
+    const text = $button?.text()?.trim() || $button.find('.custom-text')?.text()?.trim();
+    if (text.length === 0) {
+        return;
+    }
+    await waitForGeneration();
 
     removeLastCYOAMessage();
     // Sleep for 500ms before continuing
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 250));
 
     const inputTextarea = document.querySelector('#send_textarea');
-    if (inputTextarea instanceof HTMLTextAreaElement) {
-        let impersonatePrompt = extension_settings.cyoa_responses?.llm_prompt_impersonate || '';
-        impersonatePrompt = substituteParamsExtended(String(extension_settings.cyoa_responses?.llm_prompt_impersonate), { suggestionText: text });
+    if (!(inputTextarea instanceof HTMLTextAreaElement)) {
+        return;
+    }
 
-        const quiet_prompt = `/impersonate await=true ${impersonatePrompt}`;
-        inputTextarea.value = quiet_prompt;
-        inputTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+    let impersonatePrompt = extension_settings.cyoa_responses?.llm_prompt_impersonate || '';
+    impersonatePrompt = substituteParamsExtended(String(extension_settings.cyoa_responses?.llm_prompt_impersonate), { suggestionText: text });
 
-            // Find and click the send button
-        const sendButton = document.querySelector('#send_but');
-        if (sendButton instanceof HTMLElement) {
-            sendButton.click();
-        }
+    const quiet_prompt = `/impersonate await=true ${impersonatePrompt}`;
+    inputTextarea.value = quiet_prompt;
+
+    if ($button.hasClass('custom-edit-suggestion')) {
+        return; // Stop here if it's the edit button
+    }
+
+    inputTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const sendButton = document.querySelector('#send_but');
+    if (sendButton instanceof HTMLElement) {
+        sendButton.click();
     }
 }
 
@@ -186,19 +211,19 @@ async function handleCYOABtn(event) {
  * Handles the CYOA by sending the text to the User Input box
  * @param {*} event
  */
-function handleCYOAEditBtn(event) {
-    const $button = $(event.target);
-    const text = $button.find('.custom-text').text().trim();
-    if (text.length === 0) {
-        return;
-    }
+// function handleCYOAEditBtn(event) {
+//     const $button = $(event.target);
+//     const text = $button.find('.custom-text').text().trim();
+//     if (text.length === 0) {
+//         return;
+//     }
 
-    removeLastCYOAMessage();
-    const inputTextarea = document.querySelector('#send_textarea');
-    if (inputTextarea instanceof HTMLTextAreaElement) {
-        inputTextarea.value = text;
-    }
-}
+//     removeLastCYOAMessage();
+//     const inputTextarea = document.querySelector('#send_textarea');
+//     if (inputTextarea instanceof HTMLTextAreaElement) {
+//         inputTextarea.value = text;
+//     }
+// }
 
 
 /**
@@ -271,6 +296,6 @@ jQuery(async () => {
     MacrosParser.registerMacro('suggestionNumber', () => `${extension_settings.cyoa_responses?.num_responses || defaultSettings.num_responses}`);
 
     // Event delegation for CYOA buttons
-    $(document).on('click', 'button.custom-edit-suggestion', handleCYOAEditBtn);
+    $(document).on('click', 'button.custom-edit-suggestion', handleCYOABtn);
     $(document).on('click', 'button.custom-suggestion', handleCYOABtn);
 });
