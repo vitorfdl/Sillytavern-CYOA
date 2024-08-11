@@ -43,11 +43,11 @@
     flex: 1 1 auto;
 }
 
-.mes_text .custom-suggestions > .custom-suggestion button.custom-edit {
+.mes_text .custom-suggestions > .custom-suggestion button.custom-edit-suggestion {
     flex: 0 0 auto;
 }
 
-.mes_text .custom-suggestions > .custom-suggestion button.custom-edit .custom-text {
+.mes_text .custom-suggestions > .custom-suggestion button.custom-edit-suggestion .custom-text {
     display: none;
 }
 

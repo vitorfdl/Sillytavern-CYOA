@@ -22,10 +22,14 @@
                 <span>Apply World Info / Author's Note</span>
             </label>
             </br>
-            <label for="cyoa_num_responses">Number of Responses</label>
+            <label for="cyoa_num_responses">Number of Responses: <span id="cyoa_num_responses_value">3</span></label>
             <div class="range-block">
                 <input id="cyoa_num_responses" type="range" min="1" max="10" step="1" value="3" />
-                <span id="cyoa_num_responses_value">3</span>
+            </div>
+            </br>
+            <label for="cyoa_response_length">API response length: <span id="cyoa_response_length_value">100</span></label>
+            <div class="range-block">
+                <input id="cyoa_response_length" type="range" min="1" max="2000" step="25" value="500" />
             </div>
         </div>
     </div>

@@ -29,6 +29,7 @@ The assistant will end the response with {{suggestionNumber}} distinct single-se
 [Write User response]`,
     apply_wi_an: false,
     num_responses: 3,
+    response_length: 500,
 };
 let inApiCall = false;
 
@@ -39,25 +40,22 @@ let inApiCall = false;
  */
 function parseResponse(response) {
     const suggestions = [];
-    const regex = /<\s*suggestion\s*>(.+?)<\s*\/\s*suggestion\s*>|Suggestion\s+\d+\s*:\s*(.+)|Suggestion_\d+\s*:\s*(.+)/gi;
+    const regex = /<suggestion>(.+?)<\/suggestion>|Suggestion\s+\d+\s*:\s*(.+)|Suggestion_\d+\s*:\s*(.+)|^\d+\.\s*(.+)/gim;
     let match;
 
-    while ((match = regex.exec(response)) !== null) {
-        suggestions.push(match[1] || match[2]);
+    while ((match = regex.exec(`${response}\n`)) !== null) {
+        const suggestion = match[1] || match[2] || match[3] || match[4];
+        if (suggestion && suggestion.trim()) {
+            suggestions.push(suggestion.trim());
+        }
     }
 
     if (suggestions.length === 0) {
         return;
     }
-
-    const newResponse = suggestions.map((suggestion, index) =>
-        `<div class="suggestion">
-            <button class="suggestion" data-index="${index}">${suggestion}</button>
-            <button class="edit fa-solid fa-pen-to-square" data-index="${index}">
-                <span class="text">${suggestion}</span>
-            </button>
-        </div>`);
-    return `<div class=\"suggestions\">${newResponse.join("\n")}</div>`;
+    const newResponse = suggestions.map((suggestion) =>
+`<div class="suggestion"><button class="suggestion">${suggestion}</button><button class="edit-suggestion fa-solid fa-pen-to-square"><span class="text">${suggestion}</span></button></div>`);
+    return `<div class=\"suggestions\">${newResponse.join("")}</div>`
 }
 
 /**
@@ -88,12 +86,17 @@ async function requestCYOAResponses() {
 
     toastr.info('CYOA: Generating response...');
     const prompt = extension_settings.cyoa_responses?.llm_prompt || defaultSettings.llm_prompt || "";
-    const response = await generateQuietPrompt(prompt, true, true, null, null, 350);
+    const useWIAN = extension_settings.cyoa_responses?.apply_wi_an || defaultSettings.apply_wi_an;
+    const responseLength = extension_settings.cyoa_responses?.response_length || defaultSettings.response_length;
+    //  generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null, noContext = false)
+    const response = await generateQuietPrompt(prompt, true, !useWIAN, null, null, responseLength);
+
     const parsedResponse = parseResponse(response);
     if (!parsedResponse) {
         toastr.error('CYOA: Failed to parse response');
         return;
     }
+
     await sendMessageToUI(parsedResponse);
 }
 
@@ -103,13 +106,17 @@ async function requestCYOAResponses() {
  */
 function removeLastCYOAMessage(chat = getContext().chat) {
     let lastMessage = chat[chat.length - 1];
-    if (lastMessage?.extra && lastMessage?.extra?.model === 'cyoa') {
-        const target = $('#chat').find(`.mes[mesid=${lastMessage.mesId}]`);
-        if (target.length > 0) {
-            setEditedMessageId(lastMessage.mesId);
-            target.find('.mes_edit_delete').trigger('click', { fromSlashCommand: true });
-        }
+    if (!lastMessage?.extra || lastMessage?.extra?.model !== 'cyoa') {
+        return;
     }
+
+    const target = $('#chat').find(`.mes[mesid=${lastMessage.mesId}]`);
+    if (target.length === 0) {
+        return;
+    }
+
+    setEditedMessageId(lastMessage.mesId);
+    target.find('.mes_edit_delete').trigger('click', { fromSlashCommand: true });
 }
 
 /**
@@ -125,7 +132,7 @@ async function sendMessageToUI(parsedResponse) {
         is_user: true,
         is_system: false,
         send_date: getMessageTimeStamp(),
-        mes: parsedResponse,
+        mes: `${parsedResponse}`,
         mesId: context.chat.length,
         extra: {
             api: 'manual',
@@ -154,6 +161,7 @@ async function handleCYOABtn(event) {
     if (inputTextarea instanceof HTMLTextAreaElement) {
         let impersonatePrompt = extension_settings.cyoa_responses?.llm_prompt_impersonate || '';
         impersonatePrompt = substituteParamsExtended(String(extension_settings.cyoa_responses?.llm_prompt_impersonate), { suggestionText: text });
+
         const quiet_prompt = `/impersonate await=true ${impersonatePrompt}`;
         inputTextarea.value = quiet_prompt;
         inputTextarea.dispatchEvent(new Event('input', { bubbles: true }));
@@ -172,7 +180,7 @@ async function handleCYOABtn(event) {
  */
 function handleCYOAEditBtn(event) {
     const $button = $(event.target);
-    const text = $button.find('.text').text().trim();
+    const text = $button.find('.custom-text').text().trim();
     if (text.length === 0) {
         return;
     }
@@ -199,7 +207,10 @@ function loadSettings() {
     $('#cyoa_llm_prompt_impersonate').val(extension_settings.cyoa_responses.llm_prompt_impersonate).trigger('input');
     $('#cyoa_apply_wi_an').prop('checked', extension_settings.cyoa_responses.apply_wi_an).trigger('input');
     $('#cyoa_num_responses').val(extension_settings.cyoa_responses.num_responses).trigger('input');
-    $('#cyoa_num_responses_value').text(extension_settings.cyoa_responses.num_responses).trigger('input');
+    $('#cyoa_num_responses_value').text(extension_settings.cyoa_responses.num_responses);
+    $('#cyoa_response_length').val(extension_settings.cyoa_responses.response_length).trigger('input');
+    $('#cyoa_response_length_value').text(extension_settings.cyoa_responses.response_length);
+
 }
 
 function addEventListeners() {
@@ -221,6 +232,13 @@ function addEventListeners() {
         const value = $(this).val();
         extension_settings.cyoa_responses.num_responses = Number(value);
         $('#cyoa_num_responses_value').text(value);
+        saveSettingsDebounced();
+    });
+
+    $('#cyoa_response_length').on('input', function() {
+        const value = $(this).val();
+        extension_settings.cyoa_responses.response_length = Number(value);
+        $('#cyoa_response_length_value').text(value);
         saveSettingsDebounced();
     });
 }
@@ -245,6 +263,6 @@ jQuery(async () => {
     MacrosParser.registerMacro('suggestionNumber', () => `${extension_settings.cyoa_responses?.num_responses || defaultSettings.num_responses}`);
 
     // Event delegation for CYOA buttons
-    $(document).on('click', '.custom-suggestion', handleCYOABtn);
-    $(document).on('click', '.custom-edit', handleCYOAEditBtn);
+    $(document).on('click', 'button.custom-edit-suggestion', handleCYOAEditBtn);
+    $(document).on('click', 'button.custom-suggestion', handleCYOABtn);
 });
