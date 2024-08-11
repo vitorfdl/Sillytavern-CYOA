@@ -11,9 +11,7 @@ This extension adds Choose Your Own Adventure (CYOA) style responses to your Sil
 ## Installation
 Use SillyTavern's built-in extension installer with this URL:
 
-
 ## Usage
-
 1. Open the extension settings in SillyTavern.
 2. Configure the LLM prompts for option generation and impersonation.
 3. Set the desired number of response options.
@@ -45,26 +43,26 @@ The assistant will end the response with {{suggestionNumber}} distinct single-se
 
 ### CYOA Buttons
 
-[Placeholder for screenshot of CYOA buttons in chat]
+<img src="assets/response.png" width="50%">
+
+
+After generating CYOA options, you'll see a set of buttons for each suggestion:
+- **Suggestion Button**: Clicking on the main suggestion button will automatically impersonate the selected option. This means the AI will act as if the user had chosen that particular story beat.
+- **Edit Button**: Next to each suggestion is an edit button (pencil icon). Clicking this will copy the suggestion text to the input area, allowing you to modify it before sending or use it as inspiration for your own response.
 
 ## Slash Command
-
 The extension exposes the `/cyoa` slash command, which can be added to SillyTavern's QuickSettings for easy access. This command triggers the generation of CYOA response options.
 
 ## Prerequisites
-
 - SillyTavern version 1.12.4 or higher
 
 ## Support and Contributions
-
 For support or questions, use the github issues or join the SillyTavern discord server.
 
 Contributions to improve this extension are welcome. Please submit pull requests or issues on the GitHub repository.
 
 ## Credits
-
 This extension was inspired by the work of LenAnderson. Original idea: https://gist.github.com/LenAnderson/7686604c9da30dee21b76a633a0027f4
 
 ## License
-
 No License, feel free to use this extension for whatever you want.
