@@ -16,7 +16,7 @@ import { saveSettingsDebounced,
  import { MacrosParser } from '../../../macros.js';
  import { is_group_generating, selected_group } from '../../../group-chats.js';
 
-const extensionName = "SillyTavern-CYOA";
+const extensionName = "Sillytavern-CYOA";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 const defaultSettings = {
     enabled: false,

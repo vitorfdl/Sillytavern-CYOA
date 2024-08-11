@@ -1,11 +1,11 @@
 {
-    "display_name": "SillyTavern-CYOA-Responses",
+    "display_name": "SillyTavern-CYOA",
     "loading_order": 15,
     "requires": [],
     "optional": [],
     "js": "index.js",
     "css": "style.css",
     "author": "@vitorfdl",
-    "version": "1.3",
+    "version": "1.4",
     "homePage": "https://github.com/vitorfdl/Sillytavern-CYOA"
 }
