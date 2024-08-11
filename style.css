@@ -1,0 +1,76 @@
+.mes_text .custom-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    margin: 1em 3em;
+    padding: 1em;
+    border: 3px solid var(--SmartThemeBorderColor);
+}
+
+.mes_text .custom-suggestions:before {
+    content: "How does the story continue?";
+    font-weight: bold;
+    display: block;
+    text-align: center;
+    font-size: 1.1em;
+}
+
+.mes_text .custom-suggestions > .custom-suggestion {
+    display: flex;
+}
+
+.mes_text .custom-suggestions > .custom-suggestion button {
+    color: var(--SmartThemeBodyColor);
+    background-color: var(--black50a);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 1em 1em;
+    cursor: pointer;
+    margin: 5px 0;
+    transition: 0.3s;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 1.1em;
+    opacity: 0.5;
+}
+
+.mes_text .custom-suggestions > .custom-suggestion button:hover {
+    opacity: 1;
+}
+
+.mes_text .custom-suggestions > .custom-suggestion button.custom-suggestion {
+    flex: 1 1 auto;
+}
+
+.mes_text .custom-suggestions > .custom-suggestion button.custom-edit {
+    flex: 0 0 auto;
+}
+
+.mes_text .custom-suggestions > .custom-suggestion button.custom-edit .custom-text {
+    display: none;
+}
+
+#chat .mes details > summary {
+    color: cyan;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: 200ms;
+}
+
+#chat .mes details > summary:hover {
+    border-bottom-color: cyan;
+}
+
+#chat .mes[is_system="true"] {
+    height: 100px !important;
+    overflow: clip;
+    opacity: 0.25;
+    filter: saturate(0);
+    transition: 200ms;
+}
+
+#chat .mes[is_system="true"]:hover {
+    opacity: 1;
+    filter: saturate(1);
+}

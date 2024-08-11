@@ -1,0 +1,11 @@
+{
+    "display_name": "SillyTavern-CYOA-Responses",
+    "loading_order": 15,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "@vitorfdl",
+    "version": "1.0",
+    "homePage": "-"
+}
