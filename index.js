@@ -152,7 +152,7 @@ async function sendMessageToUI(parsedResponse) {
     const chat = context.chat;
 
     const messageObject = {
-        name: "CYAO Options",
+        name: "CYOA Suggestions",
         is_user: true,
         is_system: false,
         send_date: getMessageTimeStamp(),
