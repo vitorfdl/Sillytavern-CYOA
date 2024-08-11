@@ -16,7 +16,7 @@ import { saveSettingsDebounced,
  import { MacrosParser } from '../../../macros.js';
  import { is_group_generating, selected_group } from '../../../group-chats.js';
 
-const extensionName = "SillyTavern-CYOA-Responses";
+const extensionName = "SillyTavern-CYOA";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 const defaultSettings = {
     enabled: false,
@@ -25,7 +25,7 @@ const defaultSettings = {
 2. Creates or increases tension and worsens the protagonist's situation
 3. Leads directly but believably to a wild twist or super weird event
 4. Slowly moves the story forward without ending the current scene
-5. Pushes the story forward, potentially ending the current scene if feasible'
+5. Pushes the story forward, potentially ending the current scene if feasible
 
 Each suggestion surrounded by \`<suggestion>\` tags. E.g:
 <suggestion>suggestion_1</suggestion>
@@ -33,7 +33,7 @@ Each suggestion surrounded by \`<suggestion>\` tags. E.g:
 ...
 
 Do not include any other content in your response.`,
-    llm_prompt_impersonate: `[Event Direction for the next story beat on {{user}} perspective: {{suggestionText}}]
+    llm_prompt_impersonate: `[Event Direction for the next story beat on {{user}} perspective: \`{{suggestionText}}\`]
 [Based on the expected events, write the user response]`,
     apply_wi_an: false,
     num_responses: 3,
