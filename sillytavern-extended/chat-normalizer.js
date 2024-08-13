@@ -31,7 +31,7 @@ import { getRegexedString } from '../../../regex/engine.js';
  * @param {string} [params.prompt.name='System'] - The name to use for the prompt.
  * @param {number} [params.prompt.sendas=0] - 0 for system, 1 for user, 2 for character
  * @param {Array} [params.chatHistory] - Optional chat history to use instead of automatic context retrieval.
- * @param {boolean} [params.forceNames] - If false, uses user default settings for names.
+ * @param {boolean} [params.noNameOnAssistantSuffix] - set to true to not add the `{{name}}: ` to the assistant suffix
  * @param {boolean} [params.includeWiAn] - Whether to include world info and author notes.
  * @returns {Promise<string>} The normalized chat prompt for prompt-chatcompletion.js or prompt-textcompletion.js.
  */
@@ -130,10 +130,11 @@ export async function normalizeChatPrompt(params) {
 
     // Attach the instruct for the assistant
     if (power_user.instruct.enabled && main_api !== 'openai') {
-        const assistantInstruct = formatInstructModePrompt(context.name2, false);
+        const name = !params.noNameOnAssistantSuffix ? `${context.name2}:` : context.name2;
+        const assistantInstruct = formatInstructModePrompt(name, false);
         combinedPrompt += assistantInstruct;
     } else {
-        combinedPrompt += `${context.name2}:`;
+        combinedPrompt += !params.noNameOnAssistantSuffix ? `${context.name2}:` : ``;
     }
 
     console.log(combinedPrompt);

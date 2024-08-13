@@ -19,7 +19,11 @@ import {
     novelai_setting_names,
     nai_settings,
     getRequestHeaders,
+    messageFormatting
 } from "../../../../../script.js";
+import {
+    getContext,
+ } from "../../../../extensions.js";
 
 /**
  * Prompts the language model with the given parameters.
@@ -34,7 +38,8 @@ import {
  * @returns {Promise<string|AsyncGenerator<string, void, unknown>>} The generated text or a streaming generator.
  */
 export async function promptLLM(params) {
-    const { prompt, maxTokens, useStreaming = true, mes } = params;
+    const { prompt, useStreaming = true, mes } = params;
+    let { maxTokens } = params || { maxTokens: power_user.max_context };
     let generateData;
 
     // Prepare generation data based on the current API
@@ -50,14 +55,14 @@ export async function promptLLM(params) {
             throw new Error('Unsupported API:', main_api);
     }
 
+    // Trigger the generation
     const abortController = new AbortController();
-    if (mes) {
-        abortController.signal.mesDiv = params.mes.mesDiv;
+    const mesDiv = document.querySelector(`[mesid="${params.mes?.mesId || "UNDEFINED"}"]`);
+
+    if (useStreaming && mesDiv) {
+        abortController.signal.mesDiv = mesDiv;
         abortController.signal.mesId = params.mes.mesId;
         abortController.signal.swipeId = params.mes.swipeId;
-    }
-
-    if (useStreaming) {
         return streamingGeneration(generateData, abortController.signal);
     } else {
         return nonStreamingGeneration(generateData, abortController.signal);
@@ -65,6 +70,13 @@ export async function promptLLM(params) {
 }
 
 async function streamingGeneration(generateData, signal) {
+    const context = getContext();
+    const { mesId } = signal;
+    const mesDiv = document.querySelector(`[mesid="${mesId}"] .mes_text`);
+    if (!mesDiv) {
+        throw new Error('Could not find mesDiv for mesId: ' + mesId);
+    }
+
     let res;
     switch (main_api) {
         case 'textgenerationwebui':
@@ -78,11 +90,18 @@ async function streamingGeneration(generateData, signal) {
     }
 
     let fullText = '';
-    const chunks = await res();
-    for (const chunk of chunks) {
+    for await (const chunk of res()) {
         fullText += chunk.text;
+        mesDiv.innerHTML = messageFormatting(
+            chunk.text,
+            context.name2,
+            context.chat[mesId].isSystem,
+            context.chat[mesId].isUser,
+            mesId
+        );
     }
-    return fullText;
+    context.chat[mesId].mes = fullText;
+    context.saveChat();
 }
 
 async function nonStreamingGeneration(generateData, signal) {
@@ -105,6 +124,10 @@ async function nonStreamingGeneration(generateData, signal) {
 
 function getGenerateUrl(api) {
     switch (api) {
+        case 'kobold':
+            return '/api/backends/kobold/generate';
+        case 'koboldhorde':
+            return '/api/backends/koboldhorde/generate';
         case 'textgenerationwebui':
             return '/api/backends/text-completions/generate';
         case 'novel':
