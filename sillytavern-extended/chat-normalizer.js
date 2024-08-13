@@ -9,7 +9,7 @@ import {
 } from "../../../../../script.js";
 
 import { power_user }  from '../../../../power-user.js';
-import { formatInstructModeChat } from '../../../../instruct-mode.js';
+import { formatInstructModeChat, formatInstructModePrompt } from '../../../../instruct-mode.js';
 import {
     extension_settings,
     getContext,
@@ -29,6 +29,7 @@ import { getRegexedString } from '../../../regex/engine.js';
  * @param {('suffix'|'prefix'|'in-depth')} params.prompt.position - The position of the prompt.
  * @param {number} [params.prompt.inDepthNumber] - The in-depth number value (required if position is 'in-depth').
  * @param {string} [params.prompt.name='System'] - The name to use for the prompt.
+ * @param {number} [params.prompt.sendas=0] - 0 for system, 1 for user, 2 for character
  * @param {Array} [params.chatHistory] - Optional chat history to use instead of automatic context retrieval.
  * @param {boolean} [params.forceNames] - If false, uses user default settings for names.
  * @param {boolean} [params.includeWiAn] - Whether to include world info and author notes.
@@ -85,13 +86,13 @@ export async function normalizeChatPrompt(params) {
     }
 
     // Inject prompt based on position
-    const injectPrompt = (position) => {
+    const injectPrompt = () => {
         const promptText = substituteParamsExtended(params.prompt.text);
         const promptName = params.prompt.name || 'System';
-        let promptMessage = { name: promptName, mes: promptText, is_system: true };
+        // let promptMessage = { name: promptName, mes: promptText, is_system: true };
 
         if (power_user.instruct.enabled && main_api !== 'openai') {
-            return formatInstructModeChat(promptName, promptText, false, false, false, context.name1, context.name2);
+            return formatInstructModeChat(promptName, promptText, params.prompt.sendas === 1, !params.prompt.sendas, false, context.name1, context.name2);
         } else {
             return `${promptName}: ${promptText}\n`;
         }
@@ -127,7 +128,16 @@ export async function normalizeChatPrompt(params) {
         // Add logic to include world info and author's note
     }
 
+    // Attach the instruct for the assistant
+    if (power_user.instruct.enabled && main_api !== 'openai') {
+        const assistantInstruct = formatInstructModePrompt(context.name2, false);
+        combinedPrompt += assistantInstruct;
+    } else {
+        combinedPrompt += `${context.name2}:`;
+    }
+
     console.log(combinedPrompt);
+
     return combinedPrompt;
 }
 
