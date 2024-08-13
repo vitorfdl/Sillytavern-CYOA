@@ -12,7 +12,7 @@ import {
     getThumbnailUrl,
     substituteParamsExtended,
  } from "../../../../script.js";
- import { power_user }  from '../../../power-user.js';
+
  import { ARGUMENT_TYPE, SlashCommandNamedArgument } from '../../../slash-commands/SlashCommandArgument.js';
  import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
  import { commonEnumProviders } from '../../../slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -20,8 +20,7 @@ import {
  import { getMessageTimeStamp } from '../../../RossAscends-mods.js';
  import { MacrosParser } from '../../../macros.js';
  import { is_group_generating, selected_group } from '../../../group-chats.js';
- import { promptLLM } from "./sillytavern-extended/prompt-textcompletion.js";
-import { normalizeChatPrompt } from "./sillytavern-extended/chat-normalizer.js";
+ import { promptLLM } from "./sillytavern-extended/promptModel.js";
 
 const extensionName = "Sillytavern-CYOA";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
@@ -115,19 +114,17 @@ async function requestCYOAResponses(args) {
 
     let sendas = args.as ? args.as.trim() : null;
     let prompt = extension_settings.cyoa_responses?.llm_prompt || defaultSettings.llm_prompt;
-    const character = sendas ? findCharacter(sendas)?.description : power_user.persona_description;
-    prompt = substituteParamsExtended(String(prompt), { name: sendas || "{{user}}", description: character || "" });
+    prompt = substituteParamsExtended(String(prompt), { name: sendas || "{{user}}" });
 
     getChooserAndRemoveLastCYOAMessage(chat);
 
     await waitForGeneration();
 
     toastr.info('CYOA: Generating response...');
-    // const useWIAN = extension_settings.cyoa_responses?.apply_wi_an || defaultSettings.apply_wi_an;
+    const useWIAN = extension_settings.cyoa_responses?.apply_wi_an || defaultSettings.apply_wi_an;
     const responseLength = extension_settings.cyoa_responses?.response_length || defaultSettings.response_length;
-
-    const chatMergedPrompt = await normalizeChatPrompt({ prompt: { text: prompt, position: "suffix" }, chatHistory: chat, noNameOnAssistantSuffix: true });
-    const response = await promptLLM({ prompt: chatMergedPrompt, maxTokens: responseLength, useStreaming: false, mes: null });
+    //  generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null, noContext = false)
+    const response = await generateQuietPrompt(prompt, false, !useWIAN, null, sendas || "Suggestion List: ", responseLength);
 
     const parsedResponse = parseResponse(response);
     if (!parsedResponse) {
@@ -164,14 +161,15 @@ function getChooserAndRemoveLastCYOAMessage(chat = getContext().chat) {
  * @param {string|undefined} chooser - The name or avatar of the chooser character
  * @returns {string|undefined} - The avatar of the chooser character
  */
-function findCharacter(chooser) {
+function findCharacterAvatar(chooser) {
     if (!chooser || chooser == 'user') {
         return;
     }
 
     const character = characters.find(x => x.avatar === chooser) ?? characters.find(x => x.name === chooser);
     if (character && character.avatar) {
-        return character;
+        console.log(character);
+        return character.avatar;
     }
 }
 
@@ -183,8 +181,7 @@ async function sendMessageToUI(parsedResponse, chooser = null) {
     const context = getContext();
     const chat = context.chat;
 
-    const character = findCharacter(chooser);
-    const mesId = context.chat.length;
+    const originalAvatar = findCharacterAvatar(chooser);
 
     const messageObject = {
         name: "CYOA Suggestions",
@@ -192,24 +189,21 @@ async function sendMessageToUI(parsedResponse, chooser = null) {
         is_system: false,
         send_date: getMessageTimeStamp(),
         mes: `${parsedResponse}`,
-        mesId,
+        mesId: context.chat.length,
         extra: {
             api: 'manual',
             model: 'cyoa',
             chooser,
         },
         ...(chooser ? {
-            original_avatar: character.avatar,
-            force_avatar: getThumbnailUrl("avatar", character.avatar),
+            original_avatar: originalAvatar,
+            force_avatar: getThumbnailUrl("avatar", originalAvatar),
          } : {}),
     };
 
     context.chat.push(messageObject);
     // await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
     context.addOneMessage(messageObject, { showSwipes: false, forceId: chat.length - 1 });
-    await context.saveChat();
-
-    return { mesId };
 }
 
 /**
@@ -224,27 +218,23 @@ async function handleCYOABtn(event) {
     }
     await waitForGeneration();
 
-    const chooser = getChooserAndRemoveLastCYOAMessage();
+    const chooser =getChooserAndRemoveLastCYOAMessage();
     // Sleep for 500ms before continuing
     await new Promise(resolve => setTimeout(resolve, 250));
-
-    let impersonatePrompt = extension_settings.cyoa_responses?.llm_prompt_impersonate || defaultSettings.llm_prompt_impersonate;
-    impersonatePrompt = substituteParamsExtended(String(impersonatePrompt), { suggestionText: text });
-
-    if (chooser) {
-        const mes = await sendMessageToUI("", chooser);
-        const chatMergedPrompt = await normalizeChatPrompt({ prompt: { text: impersonatePrompt, position: "suffix" } });
-        await promptLLM({ prompt: chatMergedPrompt, useStreaming: true, mes: mes });
-        return;
-    }
 
     const inputTextarea = document.querySelector('#send_textarea');
     if (!(inputTextarea instanceof HTMLTextAreaElement)) {
         return;
     }
 
-    let inputPromptInjection = `/impersonate await=true ${impersonatePrompt}`;
+    let impersonatePrompt = extension_settings.cyoa_responses?.llm_prompt_impersonate || defaultSettings.llm_prompt_impersonate;
+    impersonatePrompt = substituteParamsExtended(String(impersonatePrompt), { suggestionText: text });
 
+    let inputPromptInjection = `/impersonate await=true ${impersonatePrompt}`;
+    if (chooser) {
+        inputPromptInjection = `/gen as=${chooser} await=true ${impersonatePrompt} | /sendas name=${chooser}`;
+        console.log(inputPromptInjection);
+    }
     // Inject the prompt into the input box
     inputTextarea.value = inputPromptInjection;
 
