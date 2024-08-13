@@ -20,8 +20,7 @@ import {
  import { getMessageTimeStamp } from '../../../RossAscends-mods.js';
  import { MacrosParser } from '../../../macros.js';
  import { is_group_generating, selected_group } from '../../../group-chats.js';
- import { promptLLM } from "./sillytavern-extended/prompt-textcompletion.js";
-import { normalizeChatPrompt } from "./sillytavern-extended/chat-normalizer.js";
+ import { promptLLM } from "./sillytavern-extended/promptModel.js";
 
 const extensionName = "Sillytavern-CYOA";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
@@ -122,11 +121,10 @@ async function requestCYOAResponses(args) {
     await waitForGeneration();
 
     toastr.info('CYOA: Generating response...');
-    // const useWIAN = extension_settings.cyoa_responses?.apply_wi_an || defaultSettings.apply_wi_an;
+    const useWIAN = extension_settings.cyoa_responses?.apply_wi_an || defaultSettings.apply_wi_an;
     const responseLength = extension_settings.cyoa_responses?.response_length || defaultSettings.response_length;
-
-    const chatMergedPrompt = await normalizeChatPrompt({ prompt: { text: prompt, position: "suffix" }, chatHistory: chat });
-    const response = await promptLLM({ prompt: chatMergedPrompt, maxTokens: responseLength, useStreaming: false, mes: null });
+    //  generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null, noContext = false)
+    const response = await generateQuietPrompt(prompt, false, !useWIAN, null, sendas || "Suggestion List: ", responseLength);
 
     const parsedResponse = parseResponse(response);
     if (!parsedResponse) {
