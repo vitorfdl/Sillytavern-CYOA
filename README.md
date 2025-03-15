@@ -1,6 +1,8 @@
 # SillyTavern CYOA Responses Extension
 This extension adds Choose Your Own Adventure (CYOA) style responses to your SillyTavern chats. It generates multiple response options for the user to choose from, enhancing interactivity and allowing for branching narratives.
 
+The extension directly integrates with SillyTavern's core generation system and supports all API providers, including proper role selection for Chat Completion APIs (OpenAI, Claude, etc.).
+
 <p align="center">
   <img src="assets/response.png" width="50%">
 </p>
@@ -36,6 +38,11 @@ After generating CYOA options, you'll see a set of buttons for each suggestion:
 - **LLM Prompt for Impersonation**: Set the prompt used when impersonating the selected response. Use `{{suggestionText}}` as a placeholder for the chosen option's text.
 - **Apply World Info / Author's Note**: Toggle to include World Info and Author's Note in the CYOA generation process.
 - **Number of Responses**: Adjust the slider to set how many CYOA options are generated (1-10).
+- **API Response Length**: Adjust maximum token length for CYOA generations.
+- **Prompt Role**: Choose how the prompt will be sent to Chat Completion APIs (OpenAI, Claude, etc.):
+  - **System**: Send as system message (default)
+  - **User**: Send as user message
+  - **Assistant**: Send as assistant message
 
 ### LLM Prompt Examples:
 ```

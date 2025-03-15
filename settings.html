@@ -31,6 +31,16 @@
             <div class="range-block">
                 <input id="cyoa_response_length" type="range" min="1" max="2000" step="25" value="500" />
             </div>
+            </br>
+            <label for="cyoa_prompt_role">Prompt Role:</label>
+            <div class="cyoa_settings-extension_block flex-container">
+                <select id="cyoa_prompt_role" class="text_pole">
+                    <option value="system">System</option>
+                    <option value="user">User</option>
+                    <option value="assistant">Assistant</option>
+                </select>
+                <small><i>Controls how the prompt is sent to Chat Completion APIs (like OpenAI)</i></small>
+            </div>
         </div>
     </div>
 </div>

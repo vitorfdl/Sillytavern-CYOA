@@ -5,9 +5,9 @@ import {
 
 import { saveSettingsDebounced,
     setEditedMessageId,
-    generateQuietPrompt,
     is_send_press,
     substituteParamsExtended,
+    Generate,
  } from "../../../../script.js";
 
  import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
@@ -38,6 +38,7 @@ Do not include any other content in your response.`,
     apply_wi_an: true,
     num_responses: 5,
     response_length: 500,
+    prompt_role: 'system',
 };
 let inApiCall = false;
 
@@ -112,16 +113,84 @@ async function requestCYOAResponses() {
     const prompt = extension_settings.cyoa_responses?.llm_prompt || defaultSettings.llm_prompt || "";
     const useWIAN = extension_settings.cyoa_responses?.apply_wi_an || defaultSettings.apply_wi_an;
     const responseLength = extension_settings.cyoa_responses?.response_length || defaultSettings.response_length;
-    //  generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null, noContext = false)
-    const response = await generateQuietPrompt(prompt, false, !useWIAN, null, "Suggestion List", responseLength);
-
-    const parsedResponse = parseResponse(response);
-    if (!parsedResponse) {
-        toastr.error('CYOA: Failed to parse response');
-        return;
+    const promptRole = extension_settings.cyoa_responses?.prompt_role || defaultSettings.prompt_role;
+    
+    // Create a function to temporarily modify the response length
+    const TempResponseLength = {
+        saved: null,
+        save: function(api, length) {
+            if (api === 'openai') {
+                this.saved = oai_settings.max_tokens;
+                oai_settings.max_tokens = length;
+            } else if (api === 'novel') {
+                this.saved = nai_settings.max_length;
+                nai_settings.max_length = length;
+            } else if (api === 'textgenerationwebui') {
+                this.saved = textgenerationwebui_settings.max_new_tokens;
+                textgenerationwebui_settings.max_new_tokens = length;
+            } else if (api === 'kobold') {
+                this.saved = amount_gen;
+                amount_gen = length;
+            }
+        },
+        restore: function(api) {
+            if (this.saved !== null) {
+                if (api === 'openai') {
+                    oai_settings.max_tokens = this.saved;
+                } else if (api === 'novel') {
+                    nai_settings.max_length = this.saved;
+                } else if (api === 'textgenerationwebui') {
+                    textgenerationwebui_settings.max_new_tokens = this.saved;
+                } else if (api === 'kobold') {
+                    amount_gen = this.saved;
+                }
+                this.saved = null;
+            }
+        },
+        isCustomized: function() {
+            return this.saved !== null;
+        }
+    };
+    
+    try {
+        // Save current response length
+        if (responseLength > 0) {
+            TempResponseLength.save(main_api, responseLength);
+        }
+        
+        // Prepare options for Generate function
+        const generateOptions = {
+            quiet_prompt: prompt,
+            quietToLoud: false,
+            skipWIAN: !useWIAN,
+            force_name2: true,
+            quietName: "Suggestion List",
+        };
+        
+        // For OpenAI/Chat Completion APIs, set the appropriate role using the role property
+        if (promptRole) {
+            // This is the key part - the 'quietName' will determine the role in Chat Completion
+            generateOptions.quietName = promptRole === 'user' ? 'User' : 
+                                       promptRole === 'assistant' ? 'Assistant' : 
+                                       'System';
+        }
+        
+        // Call Generate directly
+        const response = await Generate('quiet', generateOptions);
+        
+        const parsedResponse = parseResponse(response);
+        if (!parsedResponse) {
+            toastr.error('CYOA: Failed to parse response');
+            return;
+        }
+        
+        await sendMessageToUI(parsedResponse);
+    } finally {
+        // Restore original response length
+        if (TempResponseLength.isCustomized()) {
+            TempResponseLength.restore(main_api);
+        }
     }
-
-    await sendMessageToUI(parsedResponse);
 }
 
 /**
@@ -185,27 +254,26 @@ async function handleCYOABtn(event) {
     // Sleep for 500ms before continuing
     await new Promise(resolve => setTimeout(resolve, 250));
 
-    const inputTextarea = document.querySelector('#send_textarea');
-    if (!(inputTextarea instanceof HTMLTextAreaElement)) {
-        return;
-    }
-
+    // Get the impersonate prompt template and substitute parameters
     let impersonatePrompt = extension_settings.cyoa_responses?.llm_prompt_impersonate || '';
     impersonatePrompt = substituteParamsExtended(String(extension_settings.cyoa_responses?.llm_prompt_impersonate), { suggestionText: text });
 
-    const quiet_prompt = `/impersonate await=true ${impersonatePrompt}`;
-    inputTextarea.value = quiet_prompt;
-
     if ($button.hasClass('custom-edit-suggestion')) {
-        return; // Stop here if it's the edit button
+        // Just put the text in the input box if it's an edit button
+        const inputTextarea = document.querySelector('#send_textarea');
+        if (inputTextarea instanceof HTMLTextAreaElement) {
+            inputTextarea.value = impersonatePrompt;
+            inputTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        return;
     }
 
-    inputTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-
-    const sendButton = document.querySelector('#send_but');
-    if (sendButton instanceof HTMLElement) {
-        sendButton.click();
-    }
+    // Use Generate with impersonate type to directly generate the response
+    // No need to use the slash command anymore
+    await Generate('impersonate', {
+        quiet_prompt: impersonatePrompt,
+        force_name2: false, // For impersonation, don't force name2
+    });
 }
 
 /**
@@ -244,7 +312,7 @@ function loadSettings() {
     $('#cyoa_num_responses_value').text(extension_settings.cyoa_responses.num_responses);
     $('#cyoa_response_length').val(extension_settings.cyoa_responses.response_length).trigger('input');
     $('#cyoa_response_length_value').text(extension_settings.cyoa_responses.response_length);
-
+    $('#cyoa_prompt_role').val(extension_settings.cyoa_responses.prompt_role || 'system').trigger('change');
 }
 
 function addEventListeners() {
@@ -262,6 +330,7 @@ function addEventListeners() {
         extension_settings.cyoa_responses.apply_wi_an = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
+    
     $('#cyoa_num_responses').on('input', function() {
         const value = $(this).val();
         extension_settings.cyoa_responses.num_responses = Number(value);
@@ -273,6 +342,11 @@ function addEventListeners() {
         const value = $(this).val();
         extension_settings.cyoa_responses.response_length = Number(value);
         $('#cyoa_response_length_value').text(value);
+        saveSettingsDebounced();
+    });
+    
+    $('#cyoa_prompt_role').on('change', function() {
+        extension_settings.cyoa_responses.prompt_role = $(this).val();
         saveSettingsDebounced();
     });
 }
